@@ -1,0 +1,122 @@
+# =========================================================
+# Cursor Rules for Tap Order (QR Ordering + Token SaaS)
+# =========================================================
+# Purpose: Ensure Cursor always generates consistent, secure,
+# and scalable code for Tap Order's SaaS platform.
+# =========================================================
+
+# =======================
+# General Principles
+# =======================
+- Always use TypeScript for both frontend (Next.js) and backend (NestJS).
+- Code must be modular, maintainable, and follow SOLID principles.
+- Follow clean architecture: controllers → services → repositories → database.
+- Always use async/await. Never use callbacks or .then() chains.
+- Add meaningful comments for business logic and complex flows.
+
+# =======================
+# Frontend (Next.js)
+# =======================
+- Use Next.js 13+ with App Router.
+- Styling must use Tailwind CSS.
+- For animations, use Framer Motion.
+- For forms, use React Hook Form.
+- For QR scanning, use `react-qr-reader`.
+- Use Axios for API calls.
+- Always validate user inputs before sending to backend.
+- Keep frontend purely client-facing. All business logic stays in backend.
+
+# =======================
+# Backend (NestJS)
+# =======================
+- Use NestJS with TypeORM for PostgreSQL.
+- Use DTOs (Data Transfer Objects) + class-validator for input validation.
+- Implement dependency injection for services.
+- Write RESTful APIs (no GraphQL for MVP).
+- Organize code by feature modules (auth, store, product, order, token, referral, marketplace, admin).
+
+# =======================
+# Database
+# =======================
+- Use PostgreSQL as the primary database.
+- Use TypeORM migrations for schema changes.
+- Entities must include createdAt, updatedAt fields.
+- Use UUIDs (not auto-increment IDs) for all primary keys.
+- Store phone numbers encrypted (AES).
+- Store passwords/OTP secrets hashed (bcrypt).
+
+# =======================
+# Authentication & Security
+# =======================
+- Login must be phone-based using OTP (Twilio).
+- Use JWT for session tokens (access + refresh tokens).
+- Sensitive data (phone, tokens, user details) must be encrypted.
+- Always sanitize and validate API inputs to prevent SQL injection or XSS.
+- Add rate limiting for login endpoints (prevent brute force).
+- GDPR compliance:
+  - Endpoint for "Export my data".
+  - Endpoint for "Delete my data".
+  - Encrypt PII (personally identifiable information).
+
+# =======================
+# Payments
+# =======================
+- Use Stripe or Adyen for card + Apple Pay payments.
+- Support “Pay later” option → mark order as pending until paid at cashier.
+- Store transactions securely with references to payment provider IDs.
+
+# =======================
+# Tokens (Loyalty System)
+# =======================
+- 1 Token = 1 EUR (fixed rate).
+- Award tokens after successful payment.
+- Merchants can define reward ratios (e.g. €10 = 2 tokens).
+- Tokens must not expire.
+- Support one-time transfer (non-transferable after first transfer).
+- Token marketplace:
+  - Tokens escrowed until buyer pays.
+  - On sale completion: buyer gets tokens, seller gets payout.
+  - No fees deducted.
+
+# =======================
+# Referral System
+# =======================
+- Each store generates referral QR codes.
+- When a new user registers via referral:
+  - Bind permanently to referrer (downline).
+  - Referrer earns % of tokens from downline purchases.
+- Prevent unbinding or transferring referral links.
+
+# =======================
+# Merchant Features
+# =======================
+- Merchants can:
+  - CRUD products (name, description, image, price, tags).
+  - Set token reward ratio and referral %.
+  - Export data (CSV/Excel).
+- Merchants must not see users’ phone numbers (only pseudonyms + IDs).
+
+# =======================
+# Admin Features
+# =======================
+- Admin panel must allow:
+  - Monitoring merchants, users, transactions, tokens.
+  - Generating store QR codes.
+  - Monitoring token trades for fraud.
+- Admins must not be able to see plain phone numbers (only encrypted).
+
+# =======================
+# Testing
+# =======================
+- All backend services must include Jest unit tests.
+- Mock external services (Twilio, Stripe).
+- Write E2E tests for key flows (registration, order, payment, token awarding).
+
+# =======================
+# Deployment & DevOps
+# =======================
+- Provide Dockerfiles for both frontend and backend.
+- Write GitHub Actions workflows for CI/CD:
+  - Lint, build, test before deploy.
+- Deployment target: AWS ECS or Render.
+- Use environment variables for secrets (no hardcoding).
