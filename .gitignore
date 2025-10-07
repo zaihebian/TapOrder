@@ -109,3 +109,5 @@ prisma/dev.db*
 
 # TypeScript
 *.tsbuildinfo
+
+/src/generated/prisma
