@@ -40,9 +40,19 @@ npm install
 ### 3. Set up environment variables
 Create a `.env` file in the root directory:
 ```env
+# Database
 DATABASE_URL="postgresql://username:password@localhost:5432/taporder"
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_phone_number
+
+# JWT Secret
+JWT_SECRET=your_jwt_secret_key_here
+
+# Server
 PORT=3000
-# Add other environment variables as needed
 ```
 
 ### 4. Generate Prisma client
@@ -80,6 +90,21 @@ Open your browser and navigate to:
 
 ## API Endpoints
 
+### Authentication
+- `POST /auth/register` - Send SMS verification code
+  - Body: `{ "phone_number": "+1234567890" }`
+  - Response: `{ "message": "Verification code sent successfully", "phone_number": "+1234567890" }`
+
+- `POST /auth/login` - Verify code and get JWT token
+  - Body: `{ "phone_number": "+1234567890", "verification_code": "123456" }`
+  - Response: `{ "message": "Login successful", "token": "jwt_token", "user": {...} }`
+
+### Protected Routes (require Bearer token)
+- `GET /api/profile` - Get user profile
+  - Headers: `Authorization: Bearer <jwt_token>`
+  - Response: `{ "message": "Profile retrieved successfully", "user": {...} }`
+
+### Health Check
 - `GET /health` - Health check endpoint
 
 ## Contributing

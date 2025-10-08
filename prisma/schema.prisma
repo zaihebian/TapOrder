@@ -11,6 +11,8 @@ model User {
   id            String   @id @default(cuid())
   phone_number  String   @unique
   token_balance Int      @default(0)
+  verification_code String?
+  code_expires_at DateTime?
   created_at    DateTime @default(now())
 
   @@map("users")
