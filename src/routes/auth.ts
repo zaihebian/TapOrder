@@ -75,7 +75,7 @@ router.post('/register', async (req: Request, res: Response) => {
     try {
       await twilioClient.messages.create({
         body: `Your TapOrder verification code is: ${verificationCode}. This code expires in 10 minutes.`,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: process.env.TWILIO_PHONE_NUMBER!,
         to: phone_number
       });
 
