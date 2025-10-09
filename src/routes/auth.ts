@@ -13,6 +13,9 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
+// In-memory storage for verification codes (expires automatically)
+const verificationCodes = new Map<string, { code: string; expires: number }>();
+
 // Generate a 6-digit verification code
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -44,29 +47,24 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Generate verification code
     const verificationCode = generateVerificationCode();
-    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    // Check if user already exists
+    // Store verification code in memory
+    verificationCodes.set(phone_number, {
+      code: verificationCode,
+      expires: expiresAt
+    });
+
+    // Check if user already exists, create if not
     const existingUser = await prisma.user.findUnique({
       where: { phone_number }
     });
 
-    if (existingUser) {
-      // Update existing user with new verification code
-      await prisma.user.update({
-        where: { phone_number },
-        data: {
-          verification_code: verificationCode,
-          code_expires_at: codeExpiresAt
-        }
-      });
-    } else {
-      // Create new user
+    if (!existingUser) {
+      // Create new user (without verification fields)
       await prisma.user.create({
         data: {
-          phone_number,
-          verification_code: verificationCode,
-          code_expires_at: codeExpiresAt
+          phone_number
         }
       });
     }
@@ -127,34 +125,32 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Check if verification code exists and is not expired
-    if (!user.verification_code || !user.code_expires_at) {
+    // Check verification code from memory
+    const storedVerification = verificationCodes.get(phone_number);
+    
+    if (!storedVerification) {
       return res.status(400).json({
         error: 'No verification code found. Please request a new code.'
       });
     }
 
-    if (new Date() > user.code_expires_at) {
+    // Check if code has expired
+    if (Date.now() > storedVerification.expires) {
+      verificationCodes.delete(phone_number); // Clean up expired code
       return res.status(400).json({
         error: 'Verification code has expired. Please request a new code.'
       });
     }
 
     // Verify the code
-    if (user.verification_code !== verification_code) {
+    if (storedVerification.code !== verification_code) {
       return res.status(400).json({
         error: 'Invalid verification code'
       });
     }
 
     // Clear verification code after successful verification
-    await prisma.user.update({
-      where: { phone_number },
-      data: {
-        verification_code: null,
-        code_expires_at: null
-      }
-    });
+    verificationCodes.delete(phone_number);
 
     // Generate JWT token
     const token = jwt.sign(
