@@ -4,6 +4,7 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import profileRoutes from './routes/profile';
+import productRoutes from './routes/products';
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(cors());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', profileRoutes);
+app.use('/', productRoutes);
 
 // Health check route
 app.get('/health', (req: Request, res: Response) => {
