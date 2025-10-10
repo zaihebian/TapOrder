@@ -1,17 +1,34 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
-});
+let stripe: Stripe;
+try {
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'your_stripe_secret_key_here') {
+    console.log('⚠️ Stripe secret key not configured - webhook will not work');
+    stripe = {} as Stripe; // Dummy object for test mode
+  } else {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-09-30.clover',
+    });
+    console.log('✅ Stripe initialized successfully');
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize Stripe:', error);
+  stripe = {} as Stripe; // Dummy object to prevent crashes
+}
 
 // Stripe webhook endpoint
 router.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
+  // Check if Stripe is properly initialized
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'your_stripe_secret_key_here') {
+    console.log('🧪 Test mode: Webhook received but Stripe not configured');
+    return res.json({received: true, message: 'Test mode - Stripe not configured'});
+  }
+
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -19,19 +36,25 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req: Req
 
   try {
     if (!endpointSecret) {
-      console.log('⚠️ Stripe webhook secret not configured - skipping signature verification');
-      // In development, parse the event directly
-      event = JSON.parse(req.body.toString());
-    } else {
-      // In production, verify the webhook signature
-      event = stripe.webhooks.constructEvent(req.body, sig!, endpointSecret);
+      console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
+      return res.status(400).send('Webhook Error: STRIPE_WEBHOOK_SECRET not configured');
     }
+
+    if (!sig) {
+      console.error('❌ Missing stripe-signature header');
+      return res.status(400).send('Webhook Error: Missing stripe-signature header');
+    }
+
+    // Verify webhook signature
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    console.log(`✅ Webhook signature verified: ${event.type}`);
+
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('❌ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log(`Received Stripe webhook: ${event.type}`);
+  console.log(`📨 Processing Stripe webhook: ${event.type}`);
 
   try {
     switch (event.type) {
@@ -51,13 +74,17 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req: Req
         await handlePaymentCanceled(event.data.object as Stripe.PaymentIntent);
         break;
 
+      case 'payment_intent.created':
+        console.log(`📝 Payment intent created: ${event.data.object.id}`);
+        break;
+
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`⚠️ Unhandled event type: ${event.type}`);
     }
 
     res.json({received: true});
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('❌ Error processing webhook:', error);
     res.status(500).json({error: 'Webhook processing failed'});
   }
 });

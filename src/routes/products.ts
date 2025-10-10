@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Input validation helper
 function validateProductInput(data: any): { isValid: boolean; errors: string[] } {

@@ -1,10 +1,9 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate';
 import Stripe from 'stripe';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -98,7 +97,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
-      const newOrder = await tx.order.create({
+      const newOrder = await (tx as any).order.create({
         data: {
           user_id: req.user!.userId,
           merchant_id: merchant_id,
@@ -110,7 +109,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       // Create order items
       const orderItems = await Promise.all(
         orderItemsData.map((itemData: any) =>
-          tx.orderItem.create({
+          (tx as any).orderItem.create({
             data: {
               order_id: newOrder.id,
               ...itemData
@@ -143,7 +142,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         status: order.status,
         total_amount: order.total_amount,
         created_at: order.created_at,
-        items: order.orderItems.map(item => ({
+        items: order.orderItems.map((item: any) => ({
           id: item.id,
           product: item.product,
           quantity: item.quantity,
@@ -174,7 +173,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
     }
 
     // Find the order with proper includes
-    const order = await prisma.order.findFirst({
+    const order = await (prisma as any).order.findFirst({
       where: {
         id: orderId!,
         user_id: req.user!.userId
@@ -227,7 +226,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
         console.log('🧪 Test mode: Simulating successful payment');
         
         // Update order status to paid
-        const updatedOrder = await prisma.order.update({
+        const updatedOrder = await (prisma as any).order.update({
           where: { id: orderId! },
           data: { status: 'paid' },
           include: {
@@ -309,16 +308,16 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
           order_id: order.id,
           user_id: req.user!.userId,
           merchant_id: order.merchant_id,
-          merchant_name: order.merchant.name
-        },
-        receipt_email: req.user!.phone_number // Use phone as contact
+          merchant_name: order.merchant.name,
+          customer_phone: req.user!.phone_number
+        }
       });
 
       console.log(`Payment intent created: ${paymentIntent.id}, Status: ${paymentIntent.status}`);
 
       if (paymentIntent.status === 'succeeded') {
         // Update order status to paid
-        const updatedOrder = await prisma.order.update({
+        const updatedOrder = await (prisma as any).order.update({
           where: { id: orderId! },
           data: { status: 'paid' },
           include: {
@@ -348,7 +347,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
         console.log(`Order ${order.id} payment successful`);
 
         // Store payment intent ID in database
-        await prisma.order.update({
+        await (prisma as any).order.update({
           where: { id: orderId! },
           data: { payment_intent_id: paymentIntent.id }
         });
@@ -433,7 +432,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
     const { amount, reason } = req.body;
 
     // Find the order
-    const order = await prisma.order.findFirst({
+    const order = await (prisma as any).order.findFirst({
       where: {
         id: orderId!,
         user_id: req.user!.userId
@@ -459,6 +458,15 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
       });
     }
 
+    // Validate refund reason if provided
+    const validReasons = ['duplicate', 'fraudulent', 'requested_by_customer'];
+    if (reason && !validReasons.includes(reason)) {
+      return res.status(400).json({
+        error: 'Invalid refund reason',
+        details: `Reason must be one of: ${validReasons.join(', ')}`
+      });
+    }
+
     // Check if we're in test mode
     const isTestMode = !process.env.STRIPE_SECRET_KEY || 
                       process.env.STRIPE_SECRET_KEY === 'your_stripe_secret_key_here' ||
@@ -468,7 +476,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
       // Simulate refund for testing
       console.log('🧪 Test mode: Simulating refund');
       
-      const updatedOrder = await prisma.order.update({
+      const updatedOrder = await (prisma as any).order.update({
         where: { id: orderId! },
         data: { status: 'refunded' }
       });
@@ -507,7 +515,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
       const refund = await stripe.refunds.create(refundParams);
 
       // Update order status
-      const updatedOrder = await prisma.order.update({
+      const updatedOrder = await (prisma as any).order.update({
         where: { id: orderId! },
         data: { status: 'refunded' }
       });

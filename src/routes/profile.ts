@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Example protected route that requires authentication
 router.get('/profile', authenticate, async (req: Request, res: Response) => {

@@ -1,11 +1,10 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Initialize Twilio client
 const twilioClient = twilio(
