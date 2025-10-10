@@ -12,6 +12,7 @@ model User {
   phone_number  String   @unique
   token_balance Int      @default(0)
   created_at    DateTime @default(now())
+  orders        Order[]
 
   @@map("users")
 }
@@ -24,6 +25,7 @@ model Merchant {
   token_ratio         Float  @default(1.0)
   distributor_percent Float  @default(0.0)
   products            Product[]
+  orders              Order[]
 
   @@map("merchants")
 }
@@ -38,6 +40,34 @@ model Product {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   merchant    Merchant @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
 
   @@map("products")
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  user_id          String
+  merchant_id      String
+  status           String      @default("pending") // pending, paid, cancelled, refunded, failed
+  total_amount     Float
+  payment_intent_id String?    // Stripe payment intent ID
+  created_at       DateTime    @default(now())
+  user             User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  merchant         Merchant    @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
+  orderItems       OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order_id   String
+  product_id String
+  quantity   Int
+  price      Float
+  order      Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
 }

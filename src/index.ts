@@ -5,6 +5,8 @@ import * as dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import profileRoutes from './routes/profile';
 import productRoutes from './routes/products';
+import orderRoutes from './routes/orders';
+import webhookRoutes from './routes/webhooks';
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +22,8 @@ app.use(cors());
 app.use('/auth', authRoutes);
 app.use('/api', profileRoutes);
 app.use('/', productRoutes);
+app.use('/orders', orderRoutes);
+app.use('/webhooks', webhookRoutes);
 
 // Health check route
 app.get('/health', (req: Request, res: Response) => {
