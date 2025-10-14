@@ -6,7 +6,6 @@ import {
   ShoppingBagIcon, 
   CogIcon, 
   PlusIcon,
-  EyeIcon,
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -88,68 +87,69 @@ export default function MerchantDashboard() {
             <p className="mt-2 text-gray-600">Manage your restaurant operations</p>
           </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{tab.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-            {error}
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 mb-8">
+            <nav className="-mb-px flex space-x-8">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    className={`${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{tab.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-        )}
 
-        {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading...</p>
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+              {error}
             </div>
-          ) : (
-            <>
-              {activeTab === 'analytics' && (
-                <AnalyticsTab analytics={analytics} />
-              )}
-              {activeTab === 'orders' && (
-                <OrdersTab 
-                  orders={orders} 
-                  onStatusUpdate={handleOrderStatusUpdate}
-                />
-              )}
-              {activeTab === 'products' && (
-                <ProductsTab 
-                  products={products} 
-                  onProductsChange={loadTabData}
-                />
-              )}
-              {activeTab === 'settings' && (
-                <SettingsTab 
-                  settings={settings} 
-                  onSettingsChange={loadTabData}
-                />
-              )}
-            </>
           )}
+
+          {/* Tab Content */}
+          <div className="bg-white rounded-lg shadow">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'analytics' && (
+                  <AnalyticsTab analytics={analytics} />
+                )}
+                {activeTab === 'orders' && (
+                  <OrdersTab 
+                    orders={orders} 
+                    onStatusUpdate={handleOrderStatusUpdate}
+                  />
+                )}
+                {activeTab === 'products' && (
+                  <ProductsTab 
+                    products={products} 
+                    onProductsChange={loadTabData}
+                  />
+                )}
+                {activeTab === 'settings' && (
+                  <SettingsTab 
+                    settings={settings} 
+                    onSettingsChange={loadTabData}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </ProtectedMerchantRoute>

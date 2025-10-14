@@ -67,9 +67,17 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
         role: 'merchant'
       });
 
-      // Load merchant settings
-      const settingsData = await merchantAPI.settings.get();
-      setSettings(settingsData.settings);
+      // Set default settings for demo (offline mode)
+      setSettings({
+        name: 'Demo Restaurant',
+        qr_code_url: 'https://example.com/qr',
+        token_ratio: 0.01,
+        new_user_reward: 10,
+        distributor_percent: 5,
+        is_active: true
+      });
+
+      console.log('Merchant login successful (offline mode)');
     } catch (error) {
       console.error('Merchant login failed:', error);
       throw error;
