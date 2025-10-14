@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { authenticate } from '../middleware/authenticate';
 import Stripe from 'stripe';
 import prisma from '../lib/prisma';
+import { TokenRewardService } from '../services/TokenRewardService';
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ function validateOrderItems(items: any[]): { isValid: boolean; errors: string[] 
 // POST /orders - Create order and order items
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { merchant_id, items } = req.body;
+    const { merchant_id, items, token_redemptions } = req.body;
 
     // Validate input
     if (!merchant_id || typeof merchant_id !== 'string') {
@@ -94,6 +95,28 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       };
     });
 
+    // Process token redemptions if provided
+    let discountAmount = 0;
+    let finalAmount = totalAmount;
+    
+    if (token_redemptions && Array.isArray(token_redemptions) && token_redemptions.length > 0) {
+      try {
+        discountAmount = await TokenRewardService.redeemTokens(
+          req.user!.userId,
+          '', // Will be updated after order creation
+          token_redemptions
+        );
+        finalAmount = Math.max(0, totalAmount - discountAmount);
+        console.log(`💰 Token discount applied: $${discountAmount}, Final amount: $${finalAmount}`);
+      } catch (tokenError) {
+        console.error('Token redemption failed:', tokenError);
+        return res.status(400).json({
+          error: 'Token redemption failed',
+          details: tokenError instanceof Error ? tokenError.message : 'Unknown error'
+        });
+      }
+    }
+
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -102,6 +125,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
           user_id: req.user!.userId,
           merchant_id: merchant_id,
           total_amount: totalAmount,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
           status: 'pending'
         }
       });
@@ -128,6 +153,25 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         )
       );
 
+      // Update token redemptions with order ID if they exist
+      if (token_redemptions && token_redemptions.length > 0) {
+        await Promise.all(
+          token_redemptions.map((redemption: any) =>
+            (tx as any).tokenRedemption.updateMany({
+              where: {
+                user_id: req.user!.userId,
+                token_type_id: redemption.tokenTypeId,
+                amount: redemption.amount,
+                order_id: null
+              },
+              data: {
+                order_id: newOrder.id
+              }
+            })
+          )
+        );
+      }
+
       return {
         ...newOrder,
         orderItems
@@ -141,6 +185,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         merchant_id: order.merchant_id,
         status: order.status,
         total_amount: order.total_amount,
+        discount_amount: order.discount_amount,
+        final_amount: order.final_amount,
         created_at: order.created_at,
         items: order.orderItems.map((item: any) => ({
           id: item.id,
@@ -253,6 +299,20 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
           }
         });
 
+        // Award tokens for completed order
+        try {
+          const awardedTokens = await TokenRewardService.awardOrderTokens(
+            req.user!.userId,
+            orderId!,
+            order.total_amount,
+            order.merchant_id
+          );
+          console.log('🎁 Tokens awarded:', awardedTokens);
+        } catch (tokenError) {
+          console.error('Failed to award tokens:', tokenError);
+          // Don't fail the order if token awarding fails
+        }
+
         res.json({
           message: 'Payment successful (test mode)',
           order: {
@@ -345,6 +405,20 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
         });
 
         console.log(`Order ${order.id} payment successful`);
+
+        // Award tokens for completed order
+        try {
+          const awardedTokens = await TokenRewardService.awardOrderTokens(
+            req.user!.userId,
+            orderId!,
+            order.total_amount,
+            order.merchant_id
+          );
+          console.log('🎁 Tokens awarded:', awardedTokens);
+        } catch (tokenError) {
+          console.error('Failed to award tokens:', tokenError);
+          // Don't fail the order if token awarding fails
+        }
 
         // Store payment intent ID in database
         await (prisma as any).order.update({

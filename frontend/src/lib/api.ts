@@ -46,8 +46,8 @@ export const menuAPI = {
 // Order API
 export const orderAPI = {
   // Create order
-  createOrder: async (merchant_id: string, items: any[]): Promise<{ message: string; order: Order }> => {
-    const response = await api.post('/orders', { merchant_id, items });
+  createOrder: async (merchant_id: string, items: any[], token_redemptions?: any[]): Promise<{ message: string; order: Order }> => {
+    const response = await api.post('/orders', { merchant_id, items, token_redemptions });
     return response.data;
   },
 

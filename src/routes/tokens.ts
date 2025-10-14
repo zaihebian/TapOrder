@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authenticate } from '../middleware/authenticate';
 import prisma from '../lib/prisma';
+import { TokenRewardService } from '../services/TokenRewardService';
 
 const router = express.Router();
 
@@ -409,6 +410,60 @@ router.post('/refund', authenticate, async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal server error'
     });
+  }
+});
+
+// GET /api/tokens/available - Get available tokens for redemption
+router.get('/available', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { merchantId } = req.query;
+    
+    if (!merchantId || typeof merchantId !== 'string') {
+      return res.status(400).json({ error: 'Merchant ID is required' });
+    }
+
+    const availableTokens = await TokenRewardService.getAvailableTokensForRedemption(
+      req.user!.userId,
+      merchantId
+    );
+
+    res.json({
+      message: 'Available tokens retrieved successfully',
+      tokens: availableTokens
+    });
+  } catch (error) {
+    console.error('Get available tokens error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/tokens/calculate-discount - Calculate discount for token redemption
+router.post('/calculate-discount', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { redemptions } = req.body;
+    
+    if (!Array.isArray(redemptions)) {
+      return res.status(400).json({ error: 'Redemptions must be an array' });
+    }
+
+    let totalDiscount = 0;
+    for (const redemption of redemptions) {
+      if (redemption.amount && redemption.amount > 0) {
+        totalDiscount += redemption.amount * 0.01; // 1 token = $0.01
+      }
+    }
+
+    res.json({
+      message: 'Discount calculated successfully',
+      discount: totalDiscount,
+      redemptions: redemptions.map((r: any) => ({
+        ...r,
+        discount: r.amount * 0.01
+      }))
+    });
+  } catch (error) {
+    console.error('Calculate discount error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -5,6 +5,7 @@ import { ArrowLeftIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { orderAPI } from '@/lib/api';
+import TokenRedemption from './TokenRedemption';
 
 interface CheckoutProps {
   merchantId: string;
@@ -19,6 +20,8 @@ export default function Checkout({ merchantId, merchantName, onBack, onSuccess }
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+  const [tokenRedemptions, setTokenRedemptions] = useState<Array<{tokenTypeId: string, amount: number}>>([]);
+  const [tokenDiscount, setTokenDiscount] = useState(0);
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
@@ -33,7 +36,7 @@ export default function Checkout({ merchantId, merchantName, onBack, onSuccess }
         quantity: item.quantity
       }));
 
-      const orderResponse = await orderAPI.createOrder(merchantId, orderItems);
+      const orderResponse = await orderAPI.createOrder(merchantId, orderItems, tokenRedemptions);
       const orderId = orderResponse.order.id;
 
       // For MVP, we'll simulate payment success
@@ -78,9 +81,19 @@ export default function Checkout({ merchantId, merchantName, onBack, onSuccess }
             ))}
           </div>
           <div className="border-t pt-2 mt-3">
-            <div className="flex justify-between font-semibold">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Subtotal:</span>
+              <span>${getTotalPrice().toFixed(2)}</span>
+            </div>
+            {tokenDiscount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Token Discount:</span>
+                <span>-${tokenDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold border-t pt-2 mt-2">
               <span>Total:</span>
-              <span className="text-blue-600">${getTotalPrice().toFixed(2)}</span>
+              <span className="text-blue-600">${(getTotalPrice() - tokenDiscount).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -93,6 +106,16 @@ export default function Checkout({ merchantId, merchantName, onBack, onSuccess }
             <p><strong>Restaurant:</strong> {merchantName}</p>
           </div>
         </div>
+
+        {/* Token Redemption */}
+        <TokenRedemption
+          merchantId={merchantId}
+          totalAmount={getTotalPrice()}
+          onRedemptionChange={(redemptions, discount) => {
+            setTokenRedemptions(redemptions);
+            setTokenDiscount(discount);
+          }}
+        />
 
         {/* Order Notes */}
         <div>

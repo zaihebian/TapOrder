@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import Cart from '@/components/Cart';
 import QRScanner from '@/components/QRScanner';
+import Link from 'next/link';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,12 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <UserIcon className="h-4 w-4" />
                   <span>{user.phone_number}</span>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
+                    {user.token_balance} tokens
+                  </span>
+                  <Link href="/token-history" className="text-xs text-blue-600 hover:text-blue-800">
+                    View History
+                  </Link>
                 </div>
               )}
             </div>
