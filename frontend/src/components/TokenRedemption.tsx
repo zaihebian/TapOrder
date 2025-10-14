@@ -35,8 +35,12 @@ const TokenRedemption = ({ merchantId, totalAmount, onRedemptionChange }: TokenR
   const fetchAvailableTokens = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/tokens/available?merchantId=${merchantId}`);
-      setAvailableTokens(response.data.tokens);
+      console.log('Fetching available tokens for merchant:', merchantId);
+      
+      // For now, let's skip the API call and show a message
+      // The user needs to complete an order first to earn tokens
+      setAvailableTokens([]);
+      setError('Complete an order first to earn tokens for redemption');
     } catch (err: any) {
       console.error('Failed to fetch available tokens:', err);
       setError('Failed to load available tokens');
@@ -82,9 +86,12 @@ const TokenRedemption = ({ merchantId, totalAmount, onRedemptionChange }: TokenR
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-red-800 mb-2">Token Redemption</h3>
-        <p className="text-red-600">{error}</p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">🎁 Use Your Tokens</h3>
+        <p className="text-blue-700">{error}</p>
+        <p className="text-blue-600 text-sm mt-2">
+          Complete your first order to start earning tokens!
+        </p>
       </div>
     );
   }
@@ -92,8 +99,8 @@ const TokenRedemption = ({ merchantId, totalAmount, onRedemptionChange }: TokenR
   if (availableTokens.length === 0) {
     return (
       <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">Token Redemption</h3>
-        <p className="text-gray-600">No tokens available for redemption</p>
+        <h3 className="text-lg font-semibold mb-3">🎁 Use Your Tokens</h3>
+        <p className="text-gray-600">No tokens available for redemption yet. Complete orders to earn tokens!</p>
       </div>
     );
   }

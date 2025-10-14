@@ -416,6 +416,10 @@ router.post('/refund', authenticate, async (req: Request, res: Response) => {
 // GET /api/tokens/available - Get available tokens for redemption
 router.get('/available', authenticate, async (req: Request, res: Response) => {
   try {
+    console.log('Available tokens endpoint called');
+    console.log('User ID:', req.user?.userId);
+    console.log('Merchant ID from query:', req.query.merchantId);
+    
     const { merchantId } = req.query;
     
     if (!merchantId || typeof merchantId !== 'string') {
