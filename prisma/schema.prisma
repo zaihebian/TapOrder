@@ -10,9 +10,13 @@ datasource db {
 model User {
   id            String   @id @default(cuid())
   phone_number  String   @unique
-  token_balance Int      @default(0)
+  token_balance Int      @default(0) // Keep for backward compatibility
   created_at    DateTime @default(now())
-  orders        Order[]
+  
+  // Relations
+  orders             Order[]
+  token_transactions TokenTransaction[]
+  token_redemptions  TokenRedemption[]
 
   @@map("users")
 }
@@ -24,23 +28,26 @@ model Merchant {
   new_user_reward     Int    @default(0)
   token_ratio         Float  @default(1.0)
   distributor_percent Float  @default(0.0)
-  products            Product[]
-  orders              Order[]
+  
+  // Relations
+  products     Product[]
+  orders       Order[]
+  reward_rules RewardRule[]
 
   @@map("merchants")
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   merchant_id String
   name        String
   description String
   price       Float
   image_url   String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  merchant    Merchant @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
   orderItems  OrderItem[]
+  merchant    Merchant    @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
 
   @@map("products")
 }
@@ -51,11 +58,16 @@ model Order {
   merchant_id      String
   status           String      @default("pending") // pending, paid, cancelled, refunded, failed
   total_amount     Float
+  discount_amount  Float       @default(0) // Discount from token redemption
+  final_amount     Float       // total_amount - discount_amount
   payment_intent_id String?    // Stripe payment intent ID
   created_at       DateTime    @default(now())
+  
+  // Relations
   user             User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
   merchant         Merchant    @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
   orderItems       OrderItem[]
+  token_redemptions TokenRedemption[]
 
   @@map("orders")
 }
@@ -70,4 +82,86 @@ model OrderItem {
   product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+// Token System Models
+
+model TokenType {
+  id          String   @id @default(cuid())
+  name        String   @unique // "reward", "cashback", "referral", "loyalty"
+  symbol      String   @unique // "RWD", "CB", "REF", "LOY"
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Relations
+  transactions TokenTransaction[]
+  rewards      RewardRule[]
+  redemptions  TokenRedemption[]
+  
+  @@map("token_types")
+}
+
+model TokenTransaction {
+  id            String     @id @default(cuid())
+  user_id       String
+  token_type_id String
+  amount        Int        // Positive for earned, negative for spent
+  balance_after Int        // Balance after this transaction
+  transaction_type String   // "earned", "spent", "expired", "refunded"
+  source_type   String?    // "order", "referral", "signup", "manual"
+  source_id     String?    // ID of the source (order_id, referral_id, etc.)
+  description   String?
+  expires_at    DateTime?  // For time-limited tokens
+  created_at    DateTime  @default(now())
+  
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  token_type TokenType @relation(fields: [token_type_id], references: [id])
+  
+  @@map("token_transactions")
+  @@index([user_id, created_at])
+  @@index([source_type, source_id])
+}
+
+model RewardRule {
+  id            String   @id @default(cuid())
+  merchant_id   String?
+  token_type_id String
+  name          String
+  description   String?
+  trigger_type  String   // "order_amount", "order_count", "signup", "referral"
+  trigger_value Float?   // Minimum amount/count to trigger
+  reward_amount Int      // Tokens to award
+  is_active     Boolean  @default(true)
+  valid_from    DateTime @default(now())
+  valid_until   DateTime?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  // Relations
+  merchant  Merchant? @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
+  token_type TokenType @relation(fields: [token_type_id], references: [id])
+  
+  @@map("reward_rules")
+}
+
+model TokenRedemption {
+  id            String   @id @default(cuid())
+  user_id       String
+  order_id      String?
+  token_type_id String
+  amount        Int      // Tokens redeemed
+  discount_amount Float? // Actual discount applied
+  status        String   @default("pending") // "pending", "applied", "refunded"
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  order     Order?     @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  token_type TokenType @relation(fields: [token_type_id], references: [id])
+  
+  @@map("token_redemptions")
 }

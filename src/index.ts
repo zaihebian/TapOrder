@@ -7,6 +7,7 @@ import profileRoutes from './routes/profile';
 import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import webhookRoutes from './routes/webhooks';
+import tokenRoutes from './routes/tokens';
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(cors());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', profileRoutes);
+app.use('/api', tokenRoutes);
 app.use('/', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/webhooks', webhookRoutes);
