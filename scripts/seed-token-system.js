@@ -47,28 +47,18 @@ async function seedTokenSystem() {
       console.log(`✅ Created token type: ${tokenType.name}`);
     }
 
-    // Create default reward rules
+    // Create reward rules for test merchant
+    const testMerchantId = 'cmgqi29kv0000tzkkf3go6nq7';
     const rewardRules = [
       {
-        id: 'default_reward_rule',
-        merchant_id: 'default-merchant-id',
+        id: 'test_reward_rule',
+        merchant_id: testMerchantId,
         token_type_id: 'reward_tokens',
-        name: 'Default Order Reward',
-        description: 'Earn tokens for every order',
+        name: 'Order Reward',
+        description: 'Earn 1 token per $1 spent',
         trigger_type: 'order_amount',
         trigger_value: 1.0,
-        reward_amount: 10,
-        is_active: true
-      },
-      {
-        id: 'default_cashback_rule',
-        merchant_id: 'default-merchant-id',
-        token_type_id: 'cashback_tokens',
-        name: 'Default Cashback',
-        description: '5% cashback on all orders',
-        trigger_type: 'order_amount',
-        trigger_value: 1.0,
-        reward_amount: 5,
+        reward_amount: 1,
         is_active: true
       }
     ];

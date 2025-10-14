@@ -8,9 +8,14 @@ export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId') || '';
+  const merchantId = searchParams.get('merchantId') || '';
 
   const handleNewOrder = () => {
-    router.push('/');
+    if (merchantId) {
+      router.push(`/menu/${merchantId}`);
+    } else {
+      router.push('/');
+    }
   };
 
   return (

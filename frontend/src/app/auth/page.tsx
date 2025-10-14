@@ -130,14 +130,6 @@ const AuthPage = () => {
               </div>
             )}
 
-            <div className="text-center mt-6">
-              <button
-                onClick={() => setIsRegistering(!isRegistering)}
-                className="text-sm text-indigo-600 hover:text-indigo-500"
-              >
-                {isRegistering ? 'Already have an account? Login' : 'New user? Register'}
-              </button>
-            </div>
 
             <div className="text-center mt-4">
               <button

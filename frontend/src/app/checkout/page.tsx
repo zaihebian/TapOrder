@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const merchantName = searchParams.get('merchantName') || 'Restaurant';
 
   const handleSuccess = (orderId: string) => {
-    router.push(`/order-confirmation?orderId=${orderId}`);
+    router.push(`/order-confirmation?orderId=${orderId}&merchantId=${merchantId}`);
   };
 
   const handleBack = () => {

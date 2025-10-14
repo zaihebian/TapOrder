@@ -22,7 +22,7 @@ export class TokenRewardService {
           trigger_type: 'order_amount'
         },
         include: {
-          tokenType: true
+          token_type: true
         }
       });
 
@@ -32,24 +32,28 @@ export class TokenRewardService {
       for (const rule of rewardRules) {
         if (orderAmount >= rule.trigger_value) {
           // Calculate token amount based on rule
-          let tokenAmount = 0;
-          
-          if (rule.reward_type === 'fixed') {
-            tokenAmount = rule.reward_amount;
-          } else if (rule.reward_type === 'percentage') {
-            tokenAmount = Math.floor(orderAmount * (rule.reward_amount / 100));
-          }
+          // Simple calculation: reward_amount tokens per trigger_value dollars
+          let tokenAmount = Math.floor((orderAmount / rule.trigger_value) * rule.reward_amount);
 
           if (tokenAmount > 0) {
+            // Get current balance
+            const currentBalance = await prisma.tokenTransaction.findFirst({
+              where: { user_id: userId, token_type_id: rule.token_type_id },
+              orderBy: { created_at: 'desc' }
+            });
+            const balanceAfter = (currentBalance?.balance_after || 0) + tokenAmount;
+
             // Create token transaction
             const transaction = await prisma.tokenTransaction.create({
               data: {
                 user_id: userId,
                 token_type_id: rule.token_type_id,
                 amount: tokenAmount,
+                balance_after: balanceAfter,
                 transaction_type: 'earned',
+                source_type: 'order',
+                source_id: orderId,
                 description: `Order reward: ${rule.name}`,
-                order_id: orderId,
                 expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
               }
             });
@@ -67,10 +71,10 @@ export class TokenRewardService {
             awardedTokens.push({
               tokenTypeId: rule.token_type_id,
               amount: tokenAmount,
-              description: `Earned ${tokenAmount} ${rule.tokenType.symbol} tokens`
+              description: `Earned ${tokenAmount} ${rule.token_type.symbol} tokens`
             });
 
-            console.log(`✅ Awarded ${tokenAmount} ${rule.tokenType.symbol} tokens to user ${userId}`);
+            console.log(`✅ Awarded ${tokenAmount} ${rule.token_type.symbol} tokens to user ${userId}`);
           }
         }
       }
@@ -87,14 +91,23 @@ export class TokenRewardService {
         });
 
         if (merchant && merchant.new_user_reward > 0) {
+          // Get current balance
+          const currentBalance = await prisma.tokenTransaction.findFirst({
+            where: { user_id: userId, token_type_id: 'reward_tokens' },
+            orderBy: { created_at: 'desc' }
+          });
+          const balanceAfter = (currentBalance?.balance_after || 0) + merchant.new_user_reward;
+
           const newUserTransaction = await prisma.tokenTransaction.create({
             data: {
               user_id: userId,
               token_type_id: 'reward_tokens',
               amount: merchant.new_user_reward,
+              balance_after: balanceAfter,
               transaction_type: 'earned',
+              source_type: 'order',
+              source_id: orderId,
               description: 'New user bonus',
-              order_id: orderId,
               expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
             }
           });
@@ -142,7 +155,7 @@ export class TokenRewardService {
           }
         },
         include: {
-          tokenType: true
+          token_type: true
         },
         orderBy: {
           created_at: 'desc'
@@ -157,7 +170,7 @@ export class TokenRewardService {
         if (!tokenMap.has(key)) {
           tokenMap.set(key, {
             tokenTypeId: token.token_type_id,
-            tokenType: token.tokenType,
+            tokenType: token.token_type,
             availableAmount: 0,
             transactions: []
           });

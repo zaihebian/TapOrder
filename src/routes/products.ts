@@ -125,7 +125,13 @@ router.get('/stores/:id/menu', async (req: Request, res: Response) => {
         price: true,
         image_url: true,
         created_at: true,
-        updated_at: true
+        updated_at: true,
+        merchant: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
       },
       orderBy: {
         created_at: 'desc'

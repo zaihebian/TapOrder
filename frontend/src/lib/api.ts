@@ -61,6 +61,12 @@ export const orderAPI = {
     const response = await api.post(`/orders/${orderId}/pay`, { payment_method_id });
     return response.data;
   },
+
+  // Get order details
+  getOrder: async (orderId: string): Promise<Order> => {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  },
 };
 
 // Token API

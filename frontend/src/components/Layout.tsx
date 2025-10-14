@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 import Cart from '@/components/Cart';
 import QRScanner from '@/components/QRScanner';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,7 +15,8 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
-  const { getTotalItems } = useCart();
+  const { getTotalItems, items } = useCart();
+  const router = useRouter();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
@@ -91,8 +93,12 @@ export default function Layout({ children }: LayoutProps) {
         onClose={() => setIsCartOpen(false)}
         onCheckout={() => {
           setIsCartOpen(false);
-          // Navigate to checkout
-          window.location.href = '/checkout';
+          // Get merchant ID from cart items
+          const merchantId = items.length > 0 ? items[0].product.merchant.id : '';
+          const merchantName = items.length > 0 ? items[0].product.merchant.name : 'Restaurant';
+          
+          // Navigate to checkout with merchant information
+          router.push(`/checkout?merchantId=${merchantId}&merchantName=${encodeURIComponent(merchantName)}`);
         }}
       />
 

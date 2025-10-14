@@ -23,55 +23,8 @@ export default function OrderConfirmation({ orderId, onNewOrder }: OrderConfirma
 
   const fetchOrderDetails = async () => {
     try {
-      // For MVP, we'll create mock order data
-      // In production, you'd fetch from the API
-      const mockOrder: Order = {
-        id: orderId,
-        merchant_id: 'mock-merchant-id',
-        status: 'paid',
-        total_amount: 25.99,
-        discount_amount: 2.50,
-        final_amount: 23.49,
-        created_at: new Date().toISOString(),
-        items: [
-          {
-            id: 'item-1',
-            product: {
-              id: 'prod-1',
-              name: 'Delicious Burger',
-              description: 'Juicy beef burger with fresh vegetables',
-              price: 12.99,
-              image_url: 'https://via.placeholder.com/300x200',
-              merchant: {
-                id: 'merchant-1',
-                name: 'Demo Restaurant'
-              },
-              created_at: new Date().toISOString()
-            },
-            quantity: 1,
-            price: 12.99
-          },
-          {
-            id: 'item-2',
-            product: {
-              id: 'prod-2',
-              name: 'Crispy Fries',
-              description: 'Golden crispy french fries',
-              price: 4.99,
-              image_url: 'https://via.placeholder.com/300x200',
-              merchant: {
-                id: 'merchant-1',
-                name: 'Demo Restaurant'
-              },
-              created_at: new Date().toISOString()
-            },
-            quantity: 2,
-            price: 4.99
-          }
-        ]
-      };
-
-      setOrder(mockOrder);
+      const orderData = await orderAPI.getOrder(orderId);
+      setOrder(orderData);
     } catch (err: any) {
       setError('Failed to load order details');
     } finally {
@@ -220,11 +173,11 @@ export default function OrderConfirmation({ orderId, onNewOrder }: OrderConfirma
           <div className="space-y-3">
             <div className="flex items-center">
               <MapPinIcon className="h-5 w-5 text-gray-400 mr-3" />
-              <span className="text-gray-700">123 Main Street, City, State 12345</span>
+              <span className="text-gray-700">{order.merchant?.name || 'Restaurant'}</span>
             </div>
             <div className="flex items-center">
               <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
-              <span className="text-gray-700">(555) 123-4567</span>
+              <span className="text-gray-700">Contact restaurant for pickup details</span>
             </div>
             <div className="text-sm text-gray-600">
               <p>Estimated preparation time: 15-20 minutes</p>

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { authenticate } from '../middleware/authenticate';
+import { authenticateMerchant } from '../middleware/authenticate-merchant';
 import Stripe from 'stripe';
 import prisma from '../lib/prisma';
 import { TokenRewardService } from '../services/TokenRewardService';
@@ -716,6 +717,78 @@ router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: R
 
   } catch (error) {
     console.error('Merchant orders retrieval error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// GET /orders/:id - Get individual order details for authenticated user
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const orderId = req.params.id;
+    const userId = req.user!.id;
+
+    // Get order with all details
+    const order = await (prisma as any).order.findFirst({
+      where: {
+        id: orderId,
+        user_id: userId
+      },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                image_url: true
+              }
+            }
+          }
+        },
+        merchant: {
+          select: {
+            id: true,
+            name: true,
+            qr_code_url: true
+          }
+        }
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        error: 'Order not found'
+      });
+    }
+
+    // Format response to match frontend expectations
+    const formattedOrder = {
+      id: order.id,
+      merchant_id: order.merchant_id,
+      status: order.status,
+      total_amount: order.total_amount,
+      discount_amount: order.discount_amount,
+      final_amount: order.final_amount,
+      payment_intent_id: order.payment_intent_id,
+      created_at: order.created_at,
+      updated_at: order.updated_at,
+      merchant: order.merchant,
+      items: order.orderItems.map((item: any) => ({
+        id: item.id,
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price
+      }))
+    };
+
+    res.json(formattedOrder);
+
+  } catch (error) {
+    console.error('Order retrieval error:', error);
     res.status(500).json({
       error: 'Internal server error'
     });
