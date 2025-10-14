@@ -25,7 +25,7 @@ export default function Home() {
             Scan a restaurant's QR code to start ordering
           </p>
           
-          <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto">
+          <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto mb-6">
             <h2 className="text-lg font-semibold text-blue-900 mb-2">
               How it works:
             </h2>
@@ -36,6 +36,21 @@ export default function Home() {
               <li>4. Browse the menu and add items to your cart</li>
               <li>5. Checkout and pay securely</li>
             </ol>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              For Restaurants:
+            </h2>
+            <p className="text-gray-700 mb-4">
+              Manage your restaurant operations with our merchant dashboard
+            </p>
+            <a
+              href="/merchant-login"
+              className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Merchant Login
+            </a>
           </div>
         </div>
       </Layout>
@@ -52,7 +67,7 @@ export default function Home() {
           Scan a restaurant's QR code to start ordering
         </p>
         
-        <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto">
+        <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto mb-6">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
             How it works:
           </h2>
@@ -62,6 +77,21 @@ export default function Home() {
             <li>3. Browse the menu and add items to your cart</li>
             <li>4. Checkout and pay securely</li>
           </ol>
+        </div>
+        
+        <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+            For Restaurants:
+          </h2>
+          <p className="text-gray-700 mb-4">
+            Manage your restaurant operations with our merchant dashboard
+          </p>
+          <a
+            href="/merchant-login"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Merchant Login
+          </a>
         </div>
       </div>
     </Layout>

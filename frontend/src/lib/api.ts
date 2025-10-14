@@ -13,9 +13,14 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = Cookies.get('auth_token');
+  const merchantToken = Cookies.get('merchant_token');
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (merchantToken) {
+    config.headers.Authorization = `Bearer ${merchantToken}`;
   }
+  
   return config;
 });
 
@@ -70,6 +75,81 @@ export const tokenAPI = {
   redeemTokens: async (order_id: string, token_type_id: string, amount: number) => {
     const response = await api.post('/api/tokens/redeem', { order_id, token_type_id, amount });
     return response.data;
+  },
+};
+
+// Merchant API
+export const merchantAPI = {
+  // Product management
+  products: {
+    // Get all products for merchant
+    getAll: async () => {
+      const response = await api.get('/merchant/products');
+      return response.data;
+    },
+
+    // Create new product
+    create: async (productData: { name: string; description: string; price: number; image_url: string }) => {
+      const response = await api.post('/merchant/products', productData);
+      return response.data;
+    },
+
+    // Update product
+    update: async (productId: string, productData: { name: string; description: string; price: number; image_url: string }) => {
+      const response = await api.put(`/merchant/products/${productId}`, productData);
+      return response.data;
+    },
+
+    // Delete product
+    delete: async (productId: string) => {
+      const response = await api.delete(`/merchant/products/${productId}`);
+      return response.data;
+    },
+  },
+
+  // Order management
+  orders: {
+    // Get all orders for merchant
+    getAll: async (params?: { status?: string; limit?: number; offset?: number }) => {
+      const response = await api.get('/merchant/orders', { params });
+      return response.data;
+    },
+
+    // Update order status
+    updateStatus: async (orderId: string, status: string) => {
+      const response = await api.put(`/merchant/orders/${orderId}/status`, { status });
+      return response.data;
+    },
+  },
+
+  // Settings management
+  settings: {
+    // Get merchant settings
+    get: async () => {
+      const response = await api.get('/merchant/settings');
+      return response.data;
+    },
+
+    // Update merchant settings
+    update: async (settingsData: {
+      name?: string;
+      token_ratio?: number;
+      new_user_reward?: number;
+      qr_code_url?: string;
+      distributor_percent?: number;
+    }) => {
+      const response = await api.put('/merchant/settings', settingsData);
+      return response.data;
+    },
+  },
+
+  // Analytics
+  analytics: {
+    // Get merchant analytics
+    get: async (period?: number) => {
+      const response = await api.get('/merchant/analytics', { params: { period } });
+      return response.data;
+    },
   },
 };
 

@@ -635,4 +635,183 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
   }
 });
 
+// GET /merchant/orders - Get all orders for authenticated merchant
+router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const merchantId = req.merchant!.merchantId;
+    const { status, limit = 50, offset = 0 } = req.query;
+
+    // Build where clause
+    const whereClause: any = { merchant_id: merchantId };
+    if (status && typeof status === 'string') {
+      whereClause.status = status;
+    }
+
+    // Get orders with pagination
+    const orders = await (prisma as any).order.findMany({
+      where: whereClause,
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                image_url: true
+              }
+            }
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            phone_number: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string)
+    });
+
+    // Get total count for pagination
+    const totalCount = await (prisma as any).order.count({
+      where: whereClause
+    });
+
+    res.json({
+      message: 'Orders retrieved successfully',
+      orders: orders.map((order: any) => ({
+        id: order.id,
+        status: order.status,
+        total_amount: order.total_amount,
+        discount_amount: order.discount_amount,
+        final_amount: order.final_amount,
+        payment_intent_id: order.payment_intent_id,
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+        customer: {
+          id: order.user.id,
+          phone_number: order.user.phone_number
+        },
+        items: order.orderItems.map((item: any) => ({
+          id: item.id,
+          product: item.product,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.price * item.quantity
+        }))
+      })),
+      pagination: {
+        total: totalCount,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        has_more: totalCount > parseInt(offset as string) + parseInt(limit as string)
+      }
+    });
+
+  } catch (error) {
+    console.error('Merchant orders retrieval error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// PUT /merchant/orders/:id/status - Update order status
+router.put('/merchant/orders/:id/status', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const orderId = req.params.id;
+    const merchantId = req.merchant!.merchantId;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['pending', 'paid', 'preparing', 'ready', 'completed', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: 'Invalid status',
+        details: `Status must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    // Check if order exists and belongs to merchant
+    const existingOrder = await (prisma as any).order.findFirst({
+      where: {
+        id: orderId,
+        merchant_id: merchantId
+      }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({
+        error: 'Order not found'
+      });
+    }
+
+    // Update order status
+    const updatedOrder = await (prisma as any).order.update({
+      where: { id: orderId },
+      data: { 
+        status: status,
+        updated_at: new Date()
+      },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                image_url: true
+              }
+            }
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            phone_number: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      message: 'Order status updated successfully',
+      order: {
+        id: updatedOrder.id,
+        status: updatedOrder.status,
+        total_amount: updatedOrder.total_amount,
+        discount_amount: updatedOrder.discount_amount,
+        final_amount: updatedOrder.final_amount,
+        created_at: updatedOrder.created_at,
+        updated_at: updatedOrder.updated_at,
+        customer: {
+          id: updatedOrder.user.id,
+          phone_number: updatedOrder.user.phone_number
+        },
+        items: updatedOrder.orderItems.map((item: any) => ({
+          id: item.id,
+          product: item.product,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.price * item.quantity
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Order status update error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
 export default router;

@@ -184,4 +184,102 @@ router.put('/settings', authenticateMerchant, async (req: Request, res: Response
   }
 });
 
+// GET /merchant/analytics - Get merchant analytics
+router.get('/analytics', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const merchantId = req.merchant!.merchantId;
+    const { period = '30' } = req.query; // days
+
+    const days = parseInt(period as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get order statistics
+    const orderStats = await prisma.$queryRaw`
+      SELECT 
+        COUNT(*) as total_orders,
+        SUM(total_amount) as total_revenue,
+        SUM(discount_amount) as total_discounts,
+        AVG(total_amount) as avg_order_value,
+        COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_orders,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders
+      FROM "Order" 
+      WHERE merchant_id = ${merchantId} 
+      AND created_at >= ${startDate}
+    `;
+
+    // Get popular products
+    const popularProducts = await prisma.$queryRaw`
+      SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.price,
+        p.image_url,
+        SUM(oi.quantity) as total_quantity,
+        COUNT(DISTINCT o.id) as order_count,
+        SUM(oi.quantity * oi.price) as total_revenue
+      FROM "Product" p
+      JOIN "OrderItem" oi ON p.id = oi.product_id
+      JOIN "Order" o ON oi.order_id = o.id
+      WHERE p.merchant_id = ${merchantId}
+      AND o.created_at >= ${startDate}
+      GROUP BY p.id, p.name, p.description, p.price, p.image_url
+      ORDER BY total_quantity DESC
+      LIMIT 10
+    `;
+
+    // Get daily order trends
+    const dailyTrends = await prisma.$queryRaw`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as order_count,
+        SUM(total_amount) as daily_revenue
+      FROM "Order"
+      WHERE merchant_id = ${merchantId}
+      AND created_at >= ${startDate}
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `;
+
+    // Get customer statistics
+    const customerStats = await prisma.$queryRaw`
+      SELECT 
+        COUNT(DISTINCT user_id) as unique_customers,
+        COUNT(DISTINCT CASE WHEN created_at >= ${startDate} THEN user_id END) as new_customers
+      FROM "Order"
+      WHERE merchant_id = ${merchantId}
+    `;
+
+    res.json({
+      message: 'Analytics retrieved successfully',
+      analytics: {
+        period_days: days,
+        order_stats: orderStats[0] || {
+          total_orders: 0,
+          total_revenue: 0,
+          total_discounts: 0,
+          avg_order_value: 0,
+          paid_orders: 0,
+          pending_orders: 0,
+          completed_orders: 0
+        },
+        popular_products: popularProducts || [],
+        daily_trends: dailyTrends || [],
+        customer_stats: customerStats[0] || {
+          unique_customers: 0,
+          new_customers: 0
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Analytics retrieval error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
 export default router;

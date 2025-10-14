@@ -151,4 +151,148 @@ router.get('/stores/:id/menu', async (req: Request, res: Response) => {
   }
 });
 
+// GET /merchant/products - Get all products for authenticated merchant
+router.get('/merchant/products', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const merchantId = req.merchant!.merchantId;
+
+    const products = await prisma.product.findMany({
+      where: { merchant_id: merchantId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        image_url: true,
+        created_at: true,
+        updated_at: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    res.json({
+      message: 'Products retrieved successfully',
+      products,
+      total_products: products.length
+    });
+
+  } catch (error) {
+    console.error('Products retrieval error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// PUT /merchant/products/:id - Update product
+router.put('/merchant/products/:id', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const productId = req.params.id;
+    const merchantId = req.merchant!.merchantId;
+    const { name, description, price, image_url } = req.body;
+
+    // Validate input
+    const validation = validateProductInput({ name, description, price, image_url });
+    if (!validation.isValid) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validation.errors
+      });
+    }
+
+    // Check if product exists and belongs to merchant
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        id: productId,
+        merchant_id: merchantId
+      }
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        error: 'Product not found'
+      });
+    }
+
+    // Update the product
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        name: name.trim(),
+        description: description.trim(),
+        price: price,
+        image_url: image_url.trim(),
+        updated_at: new Date()
+      },
+      include: {
+        merchant: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      message: 'Product updated successfully',
+      product: {
+        id: updatedProduct.id,
+        name: updatedProduct.name,
+        description: updatedProduct.description,
+        price: updatedProduct.price,
+        image_url: updatedProduct.image_url,
+        merchant: updatedProduct.merchant,
+        created_at: updatedProduct.created_at,
+        updated_at: updatedProduct.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Product update error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// DELETE /merchant/products/:id - Delete product
+router.delete('/merchant/products/:id', authenticateMerchant, async (req: Request, res: Response) => {
+  try {
+    const productId = req.params.id;
+    const merchantId = req.merchant!.merchantId;
+
+    // Check if product exists and belongs to merchant
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        id: productId,
+        merchant_id: merchantId
+      }
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        error: 'Product not found'
+      });
+    }
+
+    // Delete the product
+    await prisma.product.delete({
+      where: { id: productId }
+    });
+
+    res.json({
+      message: 'Product deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Product deletion error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
 export default router;
