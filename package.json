@@ -21,6 +21,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.17.0",
+    "qrcode": "^1.5.4",
     "stripe": "^19.1.0",
     "twilio": "^5.10.2"
   },
@@ -35,9 +36,13 @@
     "typescript": "^5.9.3"
   },
   "nodemonConfig": {
-    "watch": ["src"],
+    "watch": [
+      "src"
+    ],
     "ext": "ts,js,json",
-    "ignore": ["src/**/*.spec.ts"],
+    "ignore": [
+      "src/**/*.spec.ts"
+    ],
     "exec": "ts-node src/index.ts"
   }
 }

@@ -89,9 +89,11 @@ export default function Layout({ children }: LayoutProps) {
         }}
       />
 
-      <QRScanner
-        onClose={() => setIsQRScannerOpen(false)}
-      />
+      {isQRScannerOpen && (
+        <QRScanner
+          onClose={() => setIsQRScannerOpen(false)}
+        />
+      )}
     </div>
   );
 }

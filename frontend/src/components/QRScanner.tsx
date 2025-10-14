@@ -25,12 +25,27 @@ export default function QRScanner({ onClose }: QRScannerProps) {
         try {
           // Extract merchant ID from QR code
           const merchantId = result.data;
+          console.log('QR Code scanned:', merchantId); // Debug log
+          console.log('QR Code result object:', result); // Debug log
           if (merchantId) {
-            // Redirect to authentication page with merchant ID
-            router.push(`/auth?merchantId=${merchantId}`);
+            console.log('Redirecting to:', `/auth?merchantId=${merchantId}`); // Debug log
+            // Close the scanner modal first
+            onClose();
+            // Try both methods of navigation
+            try {
+              router.push(`/auth?merchantId=${merchantId}`);
+              console.log('Router.push called successfully');
+            } catch (routerError) {
+              console.error('Router error:', routerError);
+              // Fallback to window.location
+              window.location.href = `/auth?merchantId=${merchantId}`;
+            }
             qrScanner.stop();
+          } else {
+            console.log('No merchant ID found in QR code');
           }
         } catch (err) {
+          console.error('QR scan error:', err); // Debug log
           setError('Invalid QR code');
         }
       },
@@ -51,8 +66,11 @@ export default function QRScanner({ onClose }: QRScannerProps) {
     try {
       setError('');
       setIsScanning(true);
+      console.log('Starting QR scanner...'); // Debug log
       await qrScannerRef.current?.start();
+      console.log('QR scanner started successfully'); // Debug log
     } catch (err) {
+      console.error('Failed to start QR scanner:', err); // Debug log
       setError('Camera access denied. Please allow camera permissions.');
       setIsScanning(false);
     }
@@ -67,6 +85,8 @@ export default function QRScanner({ onClose }: QRScannerProps) {
     startScanning();
     return () => stopScanning();
   }, []);
+
+  console.log('QRScanner component rendered, isScanning:', isScanning); // Debug log
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
