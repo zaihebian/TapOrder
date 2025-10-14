@@ -91,9 +91,25 @@ export class TokenRewardService {
         });
 
         if (merchant && merchant.new_user_reward > 0) {
+          // Find or create reward token type
+          let rewardTokenType = await prisma.tokenType.findFirst({
+            where: { name: 'reward' }
+          });
+
+          if (!rewardTokenType) {
+            rewardTokenType = await prisma.tokenType.create({
+              data: {
+                name: 'reward',
+                symbol: 'RWD',
+                description: 'Reward tokens earned from orders',
+                is_active: true
+              }
+            });
+          }
+
           // Get current balance
           const currentBalance = await prisma.tokenTransaction.findFirst({
-            where: { user_id: userId, token_type_id: 'reward_tokens' },
+            where: { user_id: userId, token_type_id: rewardTokenType.id },
             orderBy: { created_at: 'desc' }
           });
           const balanceAfter = (currentBalance?.balance_after || 0) + merchant.new_user_reward;
@@ -101,7 +117,7 @@ export class TokenRewardService {
           const newUserTransaction = await prisma.tokenTransaction.create({
             data: {
               user_id: userId,
-              token_type_id: 'reward_tokens',
+              token_type_id: rewardTokenType.id,
               amount: merchant.new_user_reward,
               balance_after: balanceAfter,
               transaction_type: 'earned',
@@ -122,12 +138,12 @@ export class TokenRewardService {
           });
 
           awardedTokens.push({
-            tokenTypeId: 'reward_tokens',
+            tokenTypeId: rewardTokenType.id,
             amount: merchant.new_user_reward,
-            description: `New user bonus: ${merchant.new_user_reward} RWD tokens`
+            description: `New user bonus: ${merchant.new_user_reward} ${rewardTokenType.symbol} tokens`
           });
 
-          console.log(`🎉 Awarded new user bonus: ${merchant.new_user_reward} RWD tokens`);
+          console.log(`🎉 Awarded new user bonus: ${merchant.new_user_reward} ${rewardTokenType.symbol} tokens`);
         }
       }
 
@@ -215,10 +231,10 @@ export class TokenRewardService {
             user_id: userId,
             token_type_id: redemption.tokenTypeId,
             amount: -redemption.amount,
-            transaction_type: 'redeemed',
-            description: `Redeemed for order ${orderId || 'pending'}`,
-            order_id: orderId || null,
-            redemption_id: redemptionTransaction.id
+            transaction_type: 'spent',
+            source_type: 'redemption',
+            source_id: redemptionTransaction.id,
+            description: `Redeemed for order ${orderId || 'pending'}`
           }
         });
 

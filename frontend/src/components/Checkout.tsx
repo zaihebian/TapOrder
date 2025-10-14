@@ -18,7 +18,7 @@ interface CheckoutProps {
 
 export default function Checkout({ merchantId, merchantName, onBack, onSuccess }: CheckoutProps) {
   const { items, getTotalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
@@ -58,6 +58,9 @@ export default function Checkout({ merchantId, merchantName, onBack, onSuccess }
     try {
       // Process payment with the created order
       const paymentResponse = await orderAPI.payOrder(createdOrder.id, paymentIntent.payment_method);
+      
+      // Refresh user data to update token balance
+      await refreshUser();
       
       clearCart();
       onSuccess(createdOrder.id);

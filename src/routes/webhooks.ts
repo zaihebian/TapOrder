@@ -11,9 +11,7 @@ try {
     console.log('⚠️ Stripe secret key not configured - webhook will not work');
     stripe = {} as Stripe; // Dummy object for test mode
   } else {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-09-30.clover',
-    });
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     console.log('✅ Stripe initialized successfully');
   }
 } catch (error) {

@@ -1,0 +1,62 @@
+# Cursor Rules - Database Safety
+
+## CRITICAL DATABASE SAFETY RULES
+
+### NEVER DO THESE OPERATIONS WITHOUT EXPLICIT USER PERMISSION:
+- `npx prisma db push` - CAN DELETE ALL DATA
+- `npx prisma migrate reset` - DELETES ALL DATA
+- `npx prisma db seed` - OVERWRITES DATA
+- Any command that modifies database schema or data
+- Any operation that could result in data loss
+
+### ALWAYS ASK BEFORE:
+- Running database migrations
+- Changing database schema
+- Seeding or populating database
+- Any operation that touches the database file
+- Any command that could affect existing data
+
+### SAFE OPERATIONS (OK to run):
+- `npx prisma generate` - Only generates client code
+- `npx prisma studio` - Only opens database viewer
+- `npx prisma migrate dev` - Creates migrations (but ask first)
+- Reading database files
+- Viewing database structure
+
+### WHEN IN DOUBT:
+- STOP
+- ASK THE USER
+- EXPLAIN THE RISK
+- WAIT FOR EXPLICIT PERMISSION
+
+### DATA LOSS PREVENTION:
+- Always assume existing data is valuable
+- Never assume it's "just test data"
+- User's data is sacred - protect it at all costs
+- When user says "it was working before" - DO NOT TOUCH DATABASE
+
+## CODE MODIFICATION RULES
+
+### ALWAYS ASK PERMISSION BEFORE:
+- Making ANY changes to existing code files
+- Modifying function signatures or interfaces
+- Adding new dependencies or imports
+- Changing API endpoints or data structures
+- Refactoring existing functionality
+- Adding new features to existing components
+
+### WHEN MAKING CODE CHANGES:
+- EXPLAIN what you're changing and why
+- ASK for explicit permission before proceeding
+- SHOW the specific changes you plan to make
+- WAIT for user approval before implementing
+
+### EXCEPTIONS (OK without asking):
+- Reading files to understand code
+- Analyzing existing code structure
+- Providing explanations or suggestions
+- Creating new files (but ask if they affect existing code)
+
+## REMEMBER: 
+**DATABASE DATA IS IRREPLACEABLE. WHEN IN DOUBT, DON'T TOUCH IT.**
+**CODE CHANGES REQUIRE PERMISSION. ALWAYS ASK FIRST.**

@@ -159,7 +159,7 @@ router.post('/login', async (req: Request, res: Response) => {
         email: merchant.email,
         role: 'merchant'
       },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET || 'fallback_secret_key_change_in_production',
       { expiresIn: '7d' }
     );
 

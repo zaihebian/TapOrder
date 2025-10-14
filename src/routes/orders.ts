@@ -8,9 +8,7 @@ import { TokenRewardService } from '../services/TokenRewardService';
 const router = express.Router();
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_fallback_key');
 
 // Input validation helper for order items
 function validateOrderItems(items: any[]): { isValid: boolean; errors: string[] } {
@@ -121,7 +119,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     // Create order with items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
-      const newOrder = await (tx as any).order.create({
+      const newOrder = await tx.order.create({
         data: {
           user_id: req.user!.userId,
           merchant_id: merchant_id,
@@ -135,7 +133,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       // Create order items
       const orderItems = await Promise.all(
         orderItemsData.map((itemData: any) =>
-          (tx as any).orderItem.create({
+          tx.orderItem.create({
             data: {
               order_id: newOrder.id,
               ...itemData
@@ -158,7 +156,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       if (token_redemptions && token_redemptions.length > 0) {
         await Promise.all(
           token_redemptions.map((redemption: any) =>
-            (tx as any).tokenRedemption.updateMany({
+            tx.tokenRedemption.updateMany({
               where: {
                 user_id: req.user!.userId,
                 token_type_id: redemption.tokenTypeId,
@@ -220,7 +218,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
     }
 
     // Find the order with proper includes
-    const order = await (prisma as any).order.findFirst({
+    const order = await prisma.order.findFirst({
       where: {
         id: orderId!,
         user_id: req.user!.userId
@@ -273,7 +271,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
         console.log('🧪 Test mode: Simulating successful payment');
         
         // Update order status to paid
-        const updatedOrder = await (prisma as any).order.update({
+        const updatedOrder = await prisma.order.update({
           where: { id: orderId! },
           data: { status: 'paid' },
           include: {
@@ -378,7 +376,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
 
       if (paymentIntent.status === 'succeeded') {
         // Update order status to paid
-        const updatedOrder = await (prisma as any).order.update({
+        const updatedOrder = await prisma.order.update({
           where: { id: orderId! },
           data: { status: 'paid' },
           include: {
@@ -422,7 +420,7 @@ router.post('/:id/pay', authenticate, async (req: Request, res: Response) => {
         }
 
         // Store payment intent ID in database
-        await (prisma as any).order.update({
+        await prisma.order.update({
           where: { id: orderId! },
           data: { payment_intent_id: paymentIntent.id }
         });
@@ -507,7 +505,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
     const { amount, reason } = req.body;
 
     // Find the order
-    const order = await (prisma as any).order.findFirst({
+    const order = await prisma.order.findFirst({
       where: {
         id: orderId!,
         user_id: req.user!.userId
@@ -551,7 +549,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
       // Simulate refund for testing
       console.log('🧪 Test mode: Simulating refund');
       
-      const updatedOrder = await (prisma as any).order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: orderId! },
         data: { status: 'refunded' }
       });
@@ -590,7 +588,7 @@ router.post('/:id/refund', authenticate, async (req: Request, res: Response) => 
       const refund = await stripe.refunds.create(refundParams);
 
       // Update order status
-      const updatedOrder = await (prisma as any).order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: orderId! },
         data: { status: 'refunded' }
       });
@@ -649,7 +647,7 @@ router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: R
     }
 
     // Get orders with pagination
-    const orders = await (prisma as any).order.findMany({
+    const orders = await prisma.order.findMany({
       where: whereClause,
       include: {
         orderItems: {
@@ -680,7 +678,7 @@ router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: R
     });
 
     // Get total count for pagination
-    const totalCount = await (prisma as any).order.count({
+    const totalCount = await prisma.order.count({
       where: whereClause
     });
 
@@ -694,7 +692,6 @@ router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: R
         final_amount: order.final_amount,
         payment_intent_id: order.payment_intent_id,
         created_at: order.created_at,
-        updated_at: order.updated_at,
         customer: {
           id: order.user.id,
           phone_number: order.user.phone_number
@@ -727,12 +724,12 @@ router.get('/merchant/orders', authenticateMerchant, async (req: Request, res: R
 router.get('/:id', authenticate, async (req: Request, res: Response) => {
   try {
     const orderId = req.params.id;
-    const userId = req.user!.id;
+    const userId = req.user!.userId;
 
     // Get order with all details
-    const order = await (prisma as any).order.findFirst({
+    const order = await prisma.order.findFirst({
       where: {
-        id: orderId,
+        id: orderId!,
         user_id: userId
       },
       include: {
@@ -775,7 +772,6 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       final_amount: order.final_amount,
       payment_intent_id: order.payment_intent_id,
       created_at: order.created_at,
-      updated_at: order.updated_at,
       merchant: order.merchant,
       items: order.orderItems.map((item: any) => ({
         id: item.id,
@@ -812,9 +808,9 @@ router.put('/merchant/orders/:id/status', authenticateMerchant, async (req: Requ
     }
 
     // Check if order exists and belongs to merchant
-    const existingOrder = await (prisma as any).order.findFirst({
+    const existingOrder = await prisma.order.findFirst({
       where: {
-        id: orderId,
+        id: orderId!,
         merchant_id: merchantId
       }
     });
@@ -826,11 +822,10 @@ router.put('/merchant/orders/:id/status', authenticateMerchant, async (req: Requ
     }
 
     // Update order status
-    const updatedOrder = await (prisma as any).order.update({
-      where: { id: orderId },
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId! },
       data: { 
-        status: status,
-        updated_at: new Date()
+        status: status
       },
       include: {
         orderItems: {
@@ -864,7 +859,6 @@ router.put('/merchant/orders/:id/status', authenticateMerchant, async (req: Requ
         discount_amount: updatedOrder.discount_amount,
         final_amount: updatedOrder.final_amount,
         created_at: updatedOrder.created_at,
-        updated_at: updatedOrder.updated_at,
         customer: {
           id: updatedOrder.user.id,
           phone_number: updatedOrder.user.phone_number

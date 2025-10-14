@@ -117,13 +117,13 @@ export const merchantAPI = {
   orders: {
     // Get all orders for merchant
     getAll: async (params?: { status?: string; limit?: number; offset?: number }) => {
-      const response = await api.get('/merchant/orders', { params });
+      const response = await api.get('/orders/merchant/orders', { params });
       return response.data;
     },
 
     // Update order status
     updateStatus: async (orderId: string, status: string) => {
-      const response = await api.put(`/merchant/orders/${orderId}/status`, { status });
+      const response = await api.put(`/orders/merchant/orders/${orderId}/status`, { status });
       return response.data;
     },
   },

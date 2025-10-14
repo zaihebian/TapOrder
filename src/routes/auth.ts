@@ -8,8 +8,8 @@ const router = express.Router();
 
 // Initialize Twilio client
 const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
+  process.env.TWILIO_ACCOUNT_SID || 'test_account_sid',
+  process.env.TWILIO_AUTH_TOKEN || 'test_auth_token'
 );
 
 // In-memory storage for verification codes (expires automatically)
@@ -72,7 +72,7 @@ router.post('/register', async (req: Request, res: Response) => {
     try {
       await twilioClient.messages.create({
         body: `Your TapOrder verification code is: ${verificationCode}. This code expires in 10 minutes.`,
-        from: process.env.TWILIO_PHONE_NUMBER!,
+        from: process.env.TWILIO_PHONE_NUMBER || '+1234567890',
         to: phone_number
       });
 
@@ -157,7 +157,7 @@ router.post('/login', async (req: Request, res: Response) => {
         userId: user.id, 
         phone_number: user.phone_number 
       },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET || 'fallback_secret_key_change_in_production',
       { expiresIn: '7d' }
     );
 

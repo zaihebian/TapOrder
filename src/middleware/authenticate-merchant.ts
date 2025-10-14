@@ -34,7 +34,7 @@ export const authenticateMerchant = async (req: Request, res: Response, next: Ne
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key_change_in_production') as {
       merchantId: string;
       email: string;
       role: string;

@@ -9,7 +9,6 @@ import Layout from '@/components/Layout';
 const AuthPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,8 +29,8 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     try {
-      const endpoint = isRegistering ? '/auth/register' : '/auth/register'; // Both use register to send code
-      await api.post(endpoint, { phone_number: phoneNumber });
+      // Both registration and login use the same register endpoint to send code
+      await api.post('/auth/register', { phone_number: phoneNumber });
       setCodeSent(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to send verification code.');
@@ -52,8 +51,10 @@ const AuthPage = () => {
       
       // Redirect to merchant menu after successful login
       if (merchantId) {
+        console.log('Redirecting to menu with merchantId:', merchantId); // Debug
         router.push(`/menu/${merchantId}`);
       } else {
+        console.log('No merchantId found, redirecting to home'); // Debug
         router.push('/'); // Fallback to home if no merchant ID
       }
     } catch (err: any) {

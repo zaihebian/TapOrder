@@ -24,10 +24,13 @@ export default function Menu({ merchantId }: MenuProps) {
   const loadMenu = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading menu for merchant:', merchantId); // Debug
       const response = await menuAPI.getMenu(merchantId);
+      console.log('Menu API response:', response); // Debug
       setMerchant(response.merchant);
       setProducts(response.products);
     } catch (err: any) {
+      console.error('Menu load error:', err); // Debug
       setError(err.response?.data?.error || 'Failed to load menu');
     } finally {
       setIsLoading(false);
