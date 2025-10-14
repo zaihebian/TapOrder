@@ -3,17 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 interface QRScannerProps {
-  onScan: (merchantId: string) => void;
   onClose: () => void;
 }
 
-export default function QRScanner({ onScan, onClose }: QRScannerProps) {
+export default function QRScanner({ onClose }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -25,7 +26,8 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
           // Extract merchant ID from QR code
           const merchantId = result.data;
           if (merchantId) {
-            onScan(merchantId);
+            // Redirect to authentication page with merchant ID
+            router.push(`/auth?merchantId=${merchantId}`);
             qrScanner.stop();
           }
         } catch (err) {
@@ -43,7 +45,7 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
     return () => {
       qrScanner.destroy();
     };
-  }, [onScan]);
+  }, [router]);
 
   const startScanning = async () => {
     try {

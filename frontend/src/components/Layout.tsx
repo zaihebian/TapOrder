@@ -19,8 +19,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleQRScan = (merchantId: string) => {
     setIsQRScannerOpen(false);
-    // Navigate to menu page with merchant ID
-    window.location.href = `/menu/${merchantId}`;
+    // QRScanner now handles navigation directly
   };
 
   return (
@@ -91,7 +90,6 @@ export default function Layout({ children }: LayoutProps) {
       />
 
       <QRScanner
-        onScan={handleQRScan}
         onClose={() => setIsQRScannerOpen(false)}
       />
     </div>
