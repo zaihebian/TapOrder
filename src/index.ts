@@ -8,6 +8,8 @@ import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import webhookRoutes from './routes/webhooks';
 import tokenRoutes from './routes/tokens';
+import merchantAuthRoutes from './routes/merchant-auth';
+import merchantSettingsRoutes from './routes/merchant-settings';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +28,8 @@ app.use('/api', tokenRoutes);
 app.use('/', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/webhooks', webhookRoutes);
+app.use('/merchant', merchantAuthRoutes);
+app.use('/merchant', merchantSettingsRoutes);
 
 // Health check route
 app.get('/health', (req: Request, res: Response) => {

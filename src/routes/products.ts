@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { authenticate } from '../middleware/authenticate';
+import { authenticateMerchant } from '../middleware/authenticate-merchant';
 import prisma from '../lib/prisma';
 
 const router = express.Router();
@@ -30,8 +30,8 @@ function validateProductInput(data: any): { isValid: boolean; errors: string[] }
   };
 }
 
-// POST /merchant/products - Create new product (no auth required for now)
-router.post('/merchant/products', async (req: Request, res: Response) => {
+// POST /merchant/products - Create new product (requires merchant authentication)
+router.post('/merchant/products', authenticateMerchant, async (req: Request, res: Response) => {
   try {
     const { name, description, price, image_url } = req.body;
 
@@ -44,32 +44,13 @@ router.post('/merchant/products', async (req: Request, res: Response) => {
       });
     }
 
-    // For now, we'll use a default merchant ID since we don't have merchant authentication yet
-    // In a real app, you'd get this from the authenticated merchant
-    const defaultMerchantId = 'default-merchant-id';
-
-    // Check if merchant exists, create if not
-    let merchant = await prisma.merchant.findUnique({
-      where: { id: defaultMerchantId }
-    });
-
-    if (!merchant) {
-      merchant = await prisma.merchant.create({
-        data: {
-          id: defaultMerchantId,
-          name: 'Default Merchant',
-          qr_code_url: 'https://example.com/qr',
-          new_user_reward: 0,
-          token_ratio: 1.0,
-          distributor_percent: 0.0
-        }
-      });
-    }
+    // Use authenticated merchant ID
+    const merchantId = req.merchant!.merchantId;
 
     // Create the product
     const product = await prisma.product.create({
       data: {
-        merchant_id: merchant.id,
+        merchant_id: merchantId,
         name: name.trim(),
         description: description.trim(),
         price: price,
