@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { MerchantProvider } from "@/contexts/MerchantContext";
+import StripeProvider from "@/components/StripeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,9 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <MerchantProvider>
-              {children}
+              <StripeProvider>
+                {children}
+              </StripeProvider>
             </MerchantProvider>
           </CartProvider>
         </AuthProvider>

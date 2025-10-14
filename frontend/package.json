@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@stripe/react-stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^8.0.0",
     "@types/js-cookie": "^3.0.6",
     "@types/qrcode": "^1.5.5",
     "axios": "^1.12.2",

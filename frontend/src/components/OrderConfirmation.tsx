@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircleIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, ClockIcon, MapPinIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { orderAPI } from '@/lib/api';
 import { Order } from '@/lib/types';
 
@@ -12,144 +12,247 @@ interface OrderConfirmationProps {
 
 export default function OrderConfirmation({ orderId, onNewOrder }: OrderConfirmationProps) {
   const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // In a real app, you'd fetch the order details
-    // For MVP, we'll simulate the order data
-    setTimeout(() => {
-      setOrder({
+    if (orderId) {
+      fetchOrderDetails();
+    }
+  }, [orderId]);
+
+  const fetchOrderDetails = async () => {
+    try {
+      // For MVP, we'll create mock order data
+      // In production, you'd fetch from the API
+      const mockOrder: Order = {
         id: orderId,
-        merchant_id: 'merchant-id',
+        merchant_id: 'mock-merchant-id',
         status: 'paid',
         total_amount: 25.99,
-        discount_amount: 0,
-        final_amount: 25.99,
+        discount_amount: 2.50,
+        final_amount: 23.49,
         created_at: new Date().toISOString(),
         items: [
           {
             id: 'item-1',
             product: {
-              id: 'product-1',
-              name: 'Delicious Pizza',
-              description: 'A tasty pizza with cheese and toppings',
-              price: 15.99,
-              image_url: 'https://example.com/pizza.jpg',
-              merchant: { id: 'merchant-id', name: 'Test Restaurant' },
+              id: 'prod-1',
+              name: 'Delicious Burger',
+              description: 'Juicy beef burger with fresh vegetables',
+              price: 12.99,
+              image_url: 'https://via.placeholder.com/300x200',
+              merchant: {
+                id: 'merchant-1',
+                name: 'Demo Restaurant'
+              },
               created_at: new Date().toISOString()
             },
             quantity: 1,
-            price: 15.99
+            price: 12.99
+          },
+          {
+            id: 'item-2',
+            product: {
+              id: 'prod-2',
+              name: 'Crispy Fries',
+              description: 'Golden crispy french fries',
+              price: 4.99,
+              image_url: 'https://via.placeholder.com/300x200',
+              merchant: {
+                id: 'merchant-1',
+                name: 'Demo Restaurant'
+              },
+              created_at: new Date().toISOString()
+            },
+            quantity: 2,
+            price: 4.99
           }
         ]
-      });
-      setIsLoading(false);
-    }, 1000);
-  }, [orderId]);
+      };
 
-  if (isLoading) {
+      setOrder(mockOrder);
+    } catch (err: any) {
+      setError('Failed to load order details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'text-green-600 bg-green-100';
+      case 'preparing': return 'text-orange-600 bg-orange-100';
+      case 'ready': return 'text-blue-600 bg-blue-100';
+      case 'completed': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'paid': return 'Payment Confirmed';
+      case 'preparing': return 'Being Prepared';
+      case 'ready': return 'Ready for Pickup';
+      case 'completed': return 'Order Completed';
+      default: return 'Processing';
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !order) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-        {error}
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h2>
+          <p className="text-gray-600 mb-4">{error || 'Unable to load order details'}</p>
+          <button
+            onClick={onNewOrder}
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+          >
+            Start New Order
+          </button>
+        </div>
       </div>
     );
   }
 
-  if (!order) return null;
-
   return (
-    <div className="max-w-md mx-auto p-4">
-      <div className="text-center mb-8">
-        <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-green-100 mb-4">
-          <CheckCircleIcon className="h-8 w-8 text-green-600" />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Success Header */}
+        <div className="text-center mb-8">
+          <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+          <p className="text-lg text-gray-600">Thank you for your order</p>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-        <p className="text-gray-600">Your order has been placed successfully</p>
-      </div>
 
-      <div className="space-y-6">
-        {/* Order Details */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Order Details</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Order ID:</span>
-              <span className="font-mono">{order.id.slice(-8)}</span>
+        {/* Order Status Card */}
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Order #{order.id.slice(-8)}</h2>
+              <p className="text-sm text-gray-600">
+                Placed on {new Date(order.created_at).toLocaleString()}
+              </p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Status:</span>
-              <span className="capitalize text-green-600 font-medium">{order.status}</span>
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+              {getStatusText(order.status)}
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total:</span>
-              <span className="font-semibold">${order.final_amount.toFixed(2)}</span>
+          </div>
+
+          {/* Order Timeline */}
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3" />
+              <span className="text-sm text-gray-700">Payment confirmed</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Order Time:</span>
-              <span>{new Date(order.created_at).toLocaleTimeString()}</span>
+            <div className="flex items-center">
+              <ClockIcon className="h-5 w-5 text-gray-400 mr-3" />
+              <span className="text-sm text-gray-500">Order being prepared</span>
+            </div>
+            <div className="flex items-center">
+              <ClockIcon className="h-5 w-5 text-gray-400 mr-3" />
+              <span className="text-sm text-gray-500">Ready for pickup</span>
             </div>
           </div>
         </div>
 
         {/* Order Items */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Items Ordered</h2>
-          <div className="space-y-3">
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
+          <div className="space-y-4">
             {order.items.map((item) => (
-              <div key={item.id} className="flex items-center space-x-3">
+              <div key={item.id} className="flex items-center space-x-4">
                 <img
                   src={item.product.image_url}
                   alt={item.product.name}
-                  className="w-12 h-12 object-cover rounded-md"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder-food.jpg';
-                  }}
+                  className="h-16 w-16 rounded-lg object-cover"
                 />
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{item.product.name}</h3>
-                  <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                  <h4 className="font-medium text-gray-900">{item.product.name}</h4>
+                  <p className="text-sm text-gray-600">{item.product.description}</p>
+                  <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                 </div>
-                <span className="font-semibold text-gray-900">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </span>
+                <div className="text-right">
+                  <p className="font-medium text-gray-900">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Next Steps */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h2 className="font-semibold text-blue-900 mb-2">What's Next?</h2>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Your order is being prepared</li>
-            <li>• You'll receive updates via SMS</li>
-            <li>• Pick up your order when ready</li>
-          </ul>
+        {/* Order Summary */}
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-medium">${order.total_amount.toFixed(2)}</span>
+            </div>
+            {order.discount_amount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount:</span>
+                <span>-${order.discount_amount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="border-t pt-2">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total:</span>
+                <span className="text-blue-600">${order.final_amount.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Restaurant Info */}
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Restaurant Information</h3>
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <MapPinIcon className="h-5 w-5 text-gray-400 mr-3" />
+              <span className="text-gray-700">123 Main Street, City, State 12345</span>
+            </div>
+            <div className="flex items-center">
+              <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
+              <span className="text-gray-700">(555) 123-4567</span>
+            </div>
+            <div className="text-sm text-gray-600">
+              <p>Estimated preparation time: 15-20 minutes</p>
+              <p>Please arrive at the restaurant for pickup</p>
+            </div>
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="space-y-3">
+        <div className="flex space-x-4">
           <button
             onClick={onNewOrder}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+            className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 font-semibold"
           >
             Place Another Order
           </button>
           <button
             onClick={() => window.print()}
-            className="w-full bg-gray-300 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 font-semibold"
+            className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 font-semibold"
           >
             Print Receipt
           </button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>You will receive SMS updates about your order status</p>
+          <p>Questions? Contact the restaurant directly</p>
         </div>
       </div>
     </div>
